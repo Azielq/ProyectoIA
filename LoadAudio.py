@@ -9,17 +9,19 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv(
     "GOOGLE_APPLICATION_CREDENTIALS", "credentials/google-service-account.json"
 )
 
-AUDIO_FILE = "llamada.mp3"
-OUTPUT_FILE = "call.txt"
 CHUNK_LENGTH_MS = 55_000  # 55 seconds per chunk (under 1-min sync limit)
 
 
-def transcribe():
-    print(f"Loading {AUDIO_FILE} ...")
-    audio = AudioSegment.from_mp3(AUDIO_FILE)
+def transcribe_audio(audio_source, output_file="call.txt"):
+    if isinstance(audio_source, str):
+        audio = AudioSegment.from_mp3(audio_source)
+    elif hasattr(audio_source, "read"):
+        audio = AudioSegment.from_mp3(audio_source)
+    else:
+        raise ValueError("audio_source must be a file path or file-like object")
+
     audio = audio.set_channels(1).set_frame_rate(16000).set_sample_width(2)
     total_ms = len(audio)
-    print(f"Duration: {total_ms / 1000:.1f}s — splitting into chunks of {CHUNK_LENGTH_MS / 1000:.0f}s")
 
     client = speech.SpeechClient()
     config = speech.RecognitionConfig(
@@ -30,19 +32,15 @@ def transcribe():
     )
 
     full_transcript = []
-    chunk_index = 0
 
     for start_ms in range(0, total_ms, CHUNK_LENGTH_MS):
         chunk = audio[start_ms : start_ms + CHUNK_LENGTH_MS]
-        chunk_index += 1
 
         buf = io.BytesIO()
         chunk.export(buf, format="wav")
         content = buf.getvalue()
 
         request_audio = speech.RecognitionAudio(content=content)
-        print(f"  Chunk {chunk_index} ({start_ms / 1000:.0f}s–{min(start_ms + CHUNK_LENGTH_MS, total_ms) / 1000:.0f}s) — sending to Google Speech-to-Text ...")
-
         response = client.recognize(config=config, audio=request_audio)
 
         chunk_text = " ".join(
@@ -52,15 +50,23 @@ def transcribe():
         )
         if chunk_text:
             full_transcript.append(chunk_text)
-            print(f"    ✓ Got {len(chunk_text)} chars")
-        else:
-            print(f"    — No speech detected")
 
     transcript = " ".join(full_transcript)
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(transcript)
 
-    print(f"\nDone! Transcript written to {OUTPUT_FILE} ({len(transcript)} chars)")
+    return transcript
+
+
+def transcribe():
+    print(f"Loading llamada.mp3 ...")
+    audio = AudioSegment.from_mp3("llamada.mp3")
+    total_ms = len(audio)
+    print(f"Duration: {total_ms / 1000:.1f}s — splitting into chunks of {CHUNK_LENGTH_MS / 1000:.0f}s")
+
+    result = transcribe_audio("llamada.mp3", "call.txt")
+    print(f"Done! Transcript written to call.txt ({len(result)} chars)")
 
 
 if __name__ == "__main__":

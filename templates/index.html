@@ -11,6 +11,14 @@
         <header>
             <h1>Call Center Assistant</h1>
         </header>
+        <div class="upload-section">
+            <label for="audio-file" class="upload-label">
+                <span id="file-name">Selecciona un archivo MP3...</span>
+                <input type="file" id="audio-file" accept=".mp3,audio/mpeg" hidden>
+            </label>
+            <button id="upload-btn" disabled>Subir y Transcribir</button>
+            <div id="upload-status" class="upload-status"></div>
+        </div>
         <div id="messages" class="messages"></div>
         <form id="chat-form" class="input-bar">
             <input type="text" id="question" placeholder="Ask a question about the call..." autocomplete="off" required>
