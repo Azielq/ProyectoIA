@@ -172,25 +172,53 @@ function formatTime(secs) {
     return m > 0 ? m + "m " + s + "s" : s + "s";
 }
 
-function updateProgress(current, total, stage, elapsed) {
-    const timerEl = document.getElementById("upload-timer");
-    const fillEl = document.getElementById("progress-fill");
-    const percentEl = document.getElementById("progress-percent");
-    if (!timerEl) return;
+const STAGE_LABELS = {
+    loading:      "Preparando audio",
+    transcribing: "Transcribiendo",
+    naming:       "Generando nombre",
+};
+
+function buildLoader() {
+    uploadStatus.className = "upload-status";
+    uploadStatus.innerHTML = `
+        <div class="ai-loader">
+            <span class="ai-loader-label" id="loader-label">Preparando audio</span>
+            <div class="ai-loader-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="ai-loader-track idle" id="loader-track">
+                <div class="ai-loader-fill" id="loader-fill"></div>
+            </div>
+            <span class="ai-loader-pct" id="loader-pct"></span>
+        </div>`;
+}
+
+function updateProgress(current, total, stage) {
+    const labelEl = document.getElementById("loader-label");
+    const trackEl = document.getElementById("loader-track");
+    const fillEl  = document.getElementById("loader-fill");
+    const pctEl   = document.getElementById("loader-pct");
+    if (!labelEl) return;
 
     if (stage === "loading") {
-        timerEl.textContent = "Cargando audio... " + formatTime(elapsed);
-        if (fillEl) fillEl.style.width = "0%";
-        if (percentEl) percentEl.textContent = "";
+        labelEl.textContent = STAGE_LABELS.loading;
+        trackEl.classList.add("idle");
+        fillEl.classList.remove("active");
+        pctEl.classList.remove("visible");
     } else if (stage === "transcribing") {
         const pct = Math.round((current / total) * 100);
-        timerEl.textContent = "Transcribiendo chunk " + current + "/" + total + " — " + formatTime(elapsed);
-        if (fillEl) fillEl.style.width = pct + "%";
-        if (percentEl) percentEl.textContent = pct + "%";
+        labelEl.textContent = STAGE_LABELS.transcribing + "  " + current + " / " + total;
+        trackEl.classList.remove("idle");
+        fillEl.style.width = pct + "%";
+        fillEl.classList.add("active");
+        pctEl.textContent = pct + "%";
+        pctEl.classList.add("visible");
     } else if (stage === "naming") {
-        timerEl.textContent = "Generando nombre... " + formatTime(elapsed);
-        if (fillEl) fillEl.style.width = "100%";
-        if (percentEl) percentEl.textContent = "99%";
+        labelEl.textContent = STAGE_LABELS.naming;
+        trackEl.classList.remove("idle");
+        fillEl.style.width = "98%";
+        fillEl.classList.add("active");
+        pctEl.classList.remove("visible");
     }
 }
 
@@ -209,22 +237,8 @@ uploadBtn.addEventListener("click", async () => {
     input.disabled = true;
     document.getElementById("send-btn").disabled = true;
 
-    uploadStatus.className = "upload-status processing";
-    uploadStatus.innerHTML =
-        '<div class="status-row"><span class="spinner"></span>' +
-        '<span id="upload-timer">Preparando...</span></div>' +
-        '<div class="progress-bar-container">' +
-        '<div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>' +
-        '</div>' +
-        '<span class="progress-percent" id="progress-percent"></span>';
-
+    buildLoader();
     const startTime = Date.now();
-    let lastCurrent = 0, lastTotal = 0, lastStage = "loading";
-
-    const timerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        updateProgress(lastCurrent, lastTotal, lastStage, elapsed);
-    }, 1000);
 
     try {
         const formData = new FormData();
@@ -251,13 +265,9 @@ uploadBtn.addEventListener("click", async () => {
 
                 try {
                     const event = JSON.parse(jsonStr);
-                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
 
                     if (event.type === "progress") {
-                        lastCurrent = event.current;
-                        lastTotal = event.total;
-                        lastStage = event.stage;
-                        updateProgress(event.current, event.total, event.stage, elapsed);
+                        updateProgress(event.current, event.total, event.stage);
                     } else if (event.type === "done") {
                         finalData = event;
                     } else if (event.type === "error") {
@@ -268,8 +278,6 @@ uploadBtn.addEventListener("click", async () => {
                 }
             }
         }
-
-        clearInterval(timerInterval);
 
         if (finalData) {
             const totalSecs = Math.floor((Date.now() - startTime) / 1000);
@@ -288,7 +296,6 @@ uploadBtn.addEventListener("click", async () => {
             uploadStatus.className = "upload-status error";
         }
     } catch (err) {
-        clearInterval(timerInterval);
         uploadStatus.textContent = "Error: " + err.message;
         uploadStatus.className = "upload-status error";
     } finally {
@@ -311,7 +318,11 @@ form.addEventListener("submit", async (e) => {
     input.disabled = true;
     document.getElementById("send-btn").disabled = true;
 
-    const loading = addBubble("Pensando...", "loading");
+    const loading = document.createElement("div");
+    loading.className = "bubble loading";
+    loading.innerHTML = "<span></span><span></span><span></span>";
+    messages.appendChild(loading);
+    chatArea.scrollTop = chatArea.scrollHeight;
 
     try {
         const res = await fetch("/ask?question=" + encodeURIComponent(question));
