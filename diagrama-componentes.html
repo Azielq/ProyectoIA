@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Componentes — Call Center Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #1e3a5f, #2563eb);
+            color: #fff;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .page-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .page-header p { font-size: 16px; opacity: 0.85; }
+        .page-header .meta { margin-top: 16px; font-size: 13px; opacity: 0.65; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+
+        section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        section h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        section h2 .num {
+            display: inline-block;
+            background: #2563eb;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 15px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        p { margin-bottom: 12px; font-size: 15px; color: #374151; }
+
+        /* ===== DIAGRAM ===== */
+        .diagram-canvas {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background: #fafbfc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .node {
+            position: relative;
+            text-align: center;
+            border-radius: 10px;
+            padding: 16px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 220px;
+            max-width: 300px;
+            line-height: 1.4;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+        }
+
+        .node .title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .node .detail {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+
+        .node-usuario {
+            background: #1e3a5f;
+            color: #fff;
+            border: 2px solid #1e3a5f;
+        }
+
+        .node-interfaz {
+            background: #dbeafe;
+            color: #1e3a5f;
+            border: 2px solid #2563eb;
+        }
+
+        .node-orquestador {
+            background: #dcfce7;
+            color: #14532d;
+            border: 2px solid #16a34a;
+        }
+
+        .node-preprocesado {
+            background: #fef3c7;
+            color: #78350f;
+            border: 2px solid #d97706;
+        }
+
+        .node-motor {
+            background: #fce7f3;
+            color: #831843;
+            border: 2px solid #db2777;
+        }
+
+        .node-postprocesado {
+            background: #f3e8ff;
+            color: #3b0764;
+            border: 2px solid #7c3aed;
+        }
+
+        /* cylinder shape for data stores */
+        .node-storage {
+            background: #fff;
+            color: #374151;
+            border: 2px solid #6b7280;
+            border-radius: 4px;
+            min-width: 200px;
+            padding: 22px 24px 16px;
+            position: relative;
+        }
+
+        .node-storage::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -2px;
+            right: -2px;
+            height: 20px;
+            background: #fff;
+            border: 2px solid #6b7280;
+            border-radius: 50%;
+        }
+
+        .node-storage::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: -2px;
+            right: -2px;
+            height: 20px;
+            background: #fff;
+            border-bottom: 2px solid #6b7280;
+            border-left: 2px solid #6b7280;
+            border-right: 2px solid #6b7280;
+            border-radius: 0 0 50% 50%;
+        }
+
+        /* arrows */
+        .arrow-down {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            color: #6b7280;
+        }
+
+        .arrow-down .line {
+            width: 2px;
+            height: 28px;
+            background: #6b7280;
+        }
+
+        .arrow-down .head {
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 10px solid #6b7280;
+        }
+
+        .arrow-down .label {
+            font-size: 11px;
+            color: #6b7280;
+            margin: 2px 0;
+            font-style: italic;
+        }
+
+        /* branch layout */
+        .branch-row {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            position: relative;
+        }
+
+        .branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* horizontal connector from orquestador to branches */
+        .h-connector {
+            position: relative;
+            width: 100%;
+            max-width: 580px;
+            height: 40px;
+            margin: 0;
+        }
+
+        .h-connector::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #6b7280;
+        }
+
+        .h-connector::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: calc(25% - 0px);
+            right: calc(25% - 0px);
+            height: 2px;
+            background: #6b7280;
+        }
+
+        .h-connector .drop-left,
+        .h-connector .drop-right {
+            position: absolute;
+            top: 20px;
+            width: 2px;
+            height: 20px;
+            background: #6b7280;
+        }
+
+        .h-connector .drop-left { left: calc(25%); }
+        .h-connector .drop-right { right: calc(25%); }
+
+        .h-connector .head-left,
+        .h-connector .head-right {
+            position: absolute;
+            top: 36px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #6b7280;
+        }
+
+        .h-connector .head-left { left: calc(25% - 5px); }
+        .h-connector .head-right { right: calc(25% - 5px); }
+
+        /* dashed arrow for secondary connections */
+        .arrow-down-dashed .line {
+            width: 2px;
+            height: 28px;
+            background: repeating-linear-gradient(
+                to bottom,
+                #6b7280 0px,
+                #6b7280 4px,
+                transparent 4px,
+                transparent 8px
+            );
+        }
+
+        /* ===== TABLE ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+
+        thead { background: #1e3a5f; color: #fff; }
+
+        thead th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        thead th:first-child { border-radius: 8px 0 0 0; }
+        thead th:last-child { border-radius: 0 8px 0 0; }
+
+        tbody td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+
+        tbody tr:hover { background: #f0f7ff; }
+        tbody tr:last-child td:first-child { border-radius: 0 0 0 8px; }
+        tbody tr:last-child td:last-child { border-radius: 0 0 8px 0; }
+
+        code {
+            background: #eef2ff;
+            color: #3730a3;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .b-usr { background: #1e3a5f; color: #fff; }
+        .b-int { background: #dbeafe; color: #1d4ed8; }
+        .b-orq { background: #dcfce7; color: #15803d; }
+        .b-pre { background: #fef3c7; color: #92400e; }
+        .b-mot { background: #fce7f3; color: #9d174d; }
+        .b-alm { background: #e5e7eb; color: #374151; }
+        .b-pos { background: #f3e8ff; color: #6b21a8; }
+        .b-bas { background: #e5e7eb; color: #374151; }
+        .b-ent { background: #e5e7eb; color: #374151; }
+
+        .note {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: #92400e;
+            margin: 16px 0;
+        }
+
+        ul.mapping {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul.mapping li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+        }
+
+        ul.mapping li:last-child { border-bottom: none; }
+
+        ul.mapping .arrow {
+            color: #2563eb;
+            font-weight: 600;
+            margin: 0 6px;
+        }
+
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 24px; }
+            section { padding: 20px; }
+            .branch-row { flex-direction: column; gap: 32px; align-items: center; }
+            .h-connector { display: none; }
+            table { font-size: 12px; }
+            thead th, tbody td { padding: 8px 10px; }
+            .node { min-width: 180px; padding: 12px 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <h1>Call Center Assistant</h1>
+    <p>Diagrama de Componentes del Sistema</p>
+    <div class="meta">Proyecto: ProyectoIA &nbsp;|&nbsp; Stack: Flask + Vanilla JS &nbsp;|&nbsp; Fecha: Marzo 2026</div>
+</header>
+
+<div class="container">
+
+    <!-- ======== DIAGRAMA PRINCIPAL ======== -->
+    <section>
+        <h2><span class="num">1</span> Diagrama de Componentes</h2>
+
+        <div class="diagram-canvas">
+
+            <!-- NIVEL 1: Usuario / API -->
+            <div class="node node-usuario">
+                <div class="title">Usuario / API</div>
+                <div class="detail">Navegador web del usuario<br>Sube MP3 y hace preguntas sobre llamadas</div>
+            </div>
+
+            <div class="arrow-down">
+                <div class="line"></div>
+                <div class="label">HTTP requests</div>
+                <div class="head"></div>
+            </div>
+
+            <!-- NIVEL 2: Interfaz / Gateway -->
+            <div class="node node-interfaz">
+                <div class="title">Interfaz / Gateway</div>
+                <div class="detail">
+                    <code>index.html</code> + <code>script.js</code> + <code>style.css</code><br>
+                    Frontend web &mdash; UI de chat y upload de audio
+                </div>
+            </div>
+
+            <div class="arrow-down">
+                <div class="line"></div>
+                <div class="label">POST /upload &nbsp;|&nbsp; GET /ask</div>
+                <div class="head"></div>
+            </div>
+
+            <!-- NIVEL 3: Orquestador de Servicios -->
+            <div class="node node-orquestador">
+                <div class="title">Orquestador de Servicios</div>
+                <div class="detail">
+                    <code>app.py</code> &mdash; Flask :8090<br>
+                    Routing HTTP, validacion, orquestacion de transcripcion y analisis
+                </div>
+            </div>
+
+            <!-- CONECTOR HORIZONTAL -->
+            <div class="h-connector">
+                <div class="drop-left"></div>
+                <div class="drop-right"></div>
+                <div class="head-left"></div>
+                <div class="head-right"></div>
+            </div>
+
+            <!-- NIVEL 4: Dos ramas -->
+            <div class="branch-row">
+
+                <!-- === RAMA IZQUIERDA === -->
+                <div class="branch">
+                    <div class="node node-preprocesado">
+                        <div class="title">Preprocesado de Datos</div>
+                        <div class="detail">
+                            <code>LoadAudio.py</code><br>
+                            Carga MP3 &rarr; mono 16kHz 16-bit<br>
+                            Chunking en segmentos de 55s<br>
+                            Exportacion a WAV (BytesIO)
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">
+                        <div class="line"></div>
+                        <div class="label">Escribe transcripcion</div>
+                        <div class="head"></div>
+                    </div>
+
+                    <div class="node node-storage">
+                        <div class="title">Almacen de Datos</div>
+                        <div class="detail">
+                            <code>call.txt</code> &mdash; transcripcion activa<br>
+                            <code>uploads/</code> &mdash; MP3 temporal
+                        </div>
+                    </div>
+
+                    <div class="arrow-down arrow-down-dashed">
+                        <div class="line"></div>
+                        <div class="label">Modelos pre-entrenados</div>
+                        <div class="head"></div>
+                    </div>
+
+                    <div class="node node-storage">
+                        <div class="title">Entrenamiento de Modelos</div>
+                        <div class="detail">
+                            Google Cloud Speech models<br>
+                            Modelo pre-entrenado es-ES<br>
+                            recognize() sincrono &mdash; LINEAR16
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === RAMA DERECHA === -->
+                <div class="branch">
+                    <div class="node node-motor">
+                        <div class="title">Motor de Inferencia<br>(Modelo ML / IA)</div>
+                        <div class="detail">
+                            Google Speech-to-Text API<br>
+                            <small>Audio &rarr; Texto (chunks 55s)</small><br><br>
+                            OpenAI GPT-4o<br>
+                            <small>Transcripcion &rarr; Analisis inteligente</small>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">
+                        <div class="line"></div>
+                        <div class="label">Respuestas procesadas</div>
+                        <div class="head"></div>
+                    </div>
+
+                    <div class="node node-postprocesado">
+                        <div class="title">Postprocesado y Reglas</div>
+                        <div class="detail">
+                            SYSTEM_PROMPT &mdash; reglas de analisis<br>
+                            Concatenacion de transcripciones parciales<br>
+                            Formateo JSON de respuestas
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">
+                        <div class="line"></div>
+                        <div class="label">Lee configuracion</div>
+                        <div class="head"></div>
+                    </div>
+
+                    <div class="node node-storage">
+                        <div class="title">Base de Conocimiento /<br>Parametros</div>
+                        <div class="detail">
+                            <code>.env</code> &mdash; API keys<br>
+                            <code>credentials/</code> &mdash; Service Account<br>
+                            Config: temperature 0.3, max_tokens 1000,<br>
+                            language_code es-ES, chunk 55s
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /branch-row -->
+
+        </div><!-- /diagram-canvas -->
+    </section>
+
+    <!-- ======== MAPEO DE COMPONENTES ======== -->
+    <section>
+        <h2><span class="num">2</span> Mapeo: Diagrama &rarr; Proyecto</h2>
+        <p>Correspondencia entre cada capa del diagrama y los archivos/servicios reales del proyecto.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Capa del Diagrama</th>
+                    <th>Componente Real</th>
+                    <th>Archivos</th>
+                    <th>Responsabilidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge b-usr">Usuario / API</span></td>
+                    <td>Navegador del usuario</td>
+                    <td>&mdash;</td>
+                    <td>Punto de entrada: sube archivos MP3 y realiza preguntas sobre las llamadas transcritas</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-int">Interfaz / Gateway</span></td>
+                    <td>Frontend Web</td>
+                    <td><code>index.html</code>, <code>script.js</code>, <code>style.css</code></td>
+                    <td>Capa de presentacion: UI de upload con validacion de archivos, chat con burbujas, indicadores de estado</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td>Flask App</td>
+                    <td><code>app.py</code></td>
+                    <td>Routing HTTP (GET /, POST /upload, GET /ask), validacion de archivos (extension, tamano 50MB), orquestacion entre LoadAudio y OpenAI</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td>Servicio de Transcripcion</td>
+                    <td><code>LoadAudio.py</code></td>
+                    <td>Carga de MP3, conversion de formato (mono, 16kHz, 16-bit), division en chunks de 55s, exportacion a WAV en memoria</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-mot">Motor de Inferencia</span></td>
+                    <td>Google STT + OpenAI GPT-4o</td>
+                    <td>APIs externas</td>
+                    <td>Google: reconocimiento de voz sincrono (es-ES). OpenAI: analisis inteligente de transcripciones con contexto de call center</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-alm">Almacen de Datos</span></td>
+                    <td>Filesystem local</td>
+                    <td><code>call.txt</code>, <code>uploads/</code></td>
+                    <td>Persistencia de la transcripcion activa y almacenamiento temporal del MP3 subido (se elimina tras procesar)</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-pos">Postprocesado</span></td>
+                    <td>Reglas de negocio</td>
+                    <td><code>app.py</code> (SYSTEM_PROMPT), <code>LoadAudio.py</code></td>
+                    <td>SYSTEM_PROMPT define las reglas de analisis de call center. Concatenacion de transcripciones parciales. Formateo JSON de respuestas</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-bas">Base de Conocimiento</span></td>
+                    <td>Configuracion y credenciales</td>
+                    <td><code>.env</code>, <code>credentials/</code></td>
+                    <td>API keys (OpenAI, Google), service account JSON, parametros del modelo (temperature, max_tokens, language, chunk size)</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-ent">Entrenamiento</span></td>
+                    <td>Modelos pre-entrenados</td>
+                    <td>Google Cloud (externo)</td>
+                    <td>Modelos de reconocimiento de voz pre-entrenados de Google para espanol (es-ES), modo sincrono con LINEAR16</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ======== FLUJO DE DATOS ======== -->
+    <section>
+        <h2><span class="num">3</span> Flujo de Datos entre Componentes</h2>
+
+        <h3 style="font-size:17px; font-weight:600; color:#374151; margin:20px 0 10px;">Flujo A: Upload y Transcripcion</h3>
+        <div class="note">Recorrido: Usuario &rarr; Interfaz &rarr; Orquestador &rarr; Preprocesado &rarr; Motor de Inferencia (Google STT) &rarr; Almacen de Datos</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Datos</th>
+                    <th>Descripcion</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><span class="badge b-usr">Usuario</span></td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td>Archivo MP3</td>
+                    <td>El usuario selecciona un archivo MP3 desde su dispositivo</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><code>POST /upload</code> (multipart/form-data)</td>
+                    <td>script.js envia el archivo via FormData al endpoint Flask</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td><code>transcribe_audio(path, output)</code></td>
+                    <td>app.py guarda el MP3 en uploads/ y llama a LoadAudio.py</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td><span class="badge b-mot">Motor IA</span></td>
+                    <td>WAV chunks (55s, LINEAR16, 16kHz)</td>
+                    <td>Cada chunk se envia a Google Speech-to-Text via recognize()</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><span class="badge b-mot">Motor IA</span></td>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td>Transcripciones parciales</td>
+                    <td>Google retorna el texto reconocido por cada chunk</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td><span class="badge b-alm">Almacen</span></td>
+                    <td>Transcripcion completa</td>
+                    <td>Las transcripciones parciales se concatenan y guardan en call.txt</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td><code>JSON {message, transcript_length}</code></td>
+                    <td>Flask retorna confirmacion al frontend</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 style="font-size:17px; font-weight:600; color:#374151; margin:20px 0 10px;">Flujo B: Consulta al Chat</h3>
+        <div class="note">Recorrido: Usuario &rarr; Interfaz &rarr; Orquestador &rarr; Motor de Inferencia (GPT-4o) + Postprocesado + Base de Conocimiento</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Datos</th>
+                    <th>Descripcion</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><span class="badge b-usr">Usuario</span></td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td>Pregunta en texto</td>
+                    <td>El usuario escribe una pregunta y presiona Send</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><code>GET /ask?question=...</code></td>
+                    <td>script.js envia la pregunta al endpoint Flask</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-alm">Almacen</span></td>
+                    <td>Lee <code>call.txt</code></td>
+                    <td>app.py carga la transcripcion desde el filesystem</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-bas">Base Conocim.</span></td>
+                    <td>SYSTEM_PROMPT, API Key</td>
+                    <td>Lee las reglas de analisis y credenciales de configuracion</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-mot">Motor IA</span></td>
+                    <td>Transcripcion + pregunta + prompt</td>
+                    <td>Envia a OpenAI GPT-4o via chat.completions.create()</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td><span class="badge b-mot">Motor IA</span></td>
+                    <td><span class="badge b-pos">Postprocesado</span></td>
+                    <td>Respuesta del modelo</td>
+                    <td>GPT-4o retorna el analisis, se formatea como JSON</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td><code>JSON {answer}</code></td>
+                    <td>Flask retorna la respuesta formateada al frontend</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ======== DETALLE TECNICO ======== -->
+    <section>
+        <h2><span class="num">4</span> Detalle Tecnico por Componente</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Componente</th>
+                    <th>Tecnologia</th>
+                    <th>Archivos</th>
+                    <th>Endpoints / Funciones</th>
+                    <th>Parametros Clave</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge b-int">Interfaz</span></td>
+                    <td>HTML5, Vanilla JS, CSS3</td>
+                    <td><code>index.html</code><br><code>script.js</code><br><code>style.css</code></td>
+                    <td>Upload handler (FormData)<br>Chat handler (Fetch API)<br><code>addBubble()</code></td>
+                    <td>accept: <code>.mp3</code><br>Validacion cliente: extension</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-orq">Orquestador</span></td>
+                    <td>Flask 3.1.0, Python</td>
+                    <td><code>app.py</code></td>
+                    <td><code>GET /</code><br><code>POST /upload</code><br><code>GET /ask</code><br><code>ERR 413</code></td>
+                    <td>MAX_CONTENT_LENGTH: 50 MB<br>Puerto: 8090</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-pre">Preprocesado</span></td>
+                    <td>pydub 0.25.1, FFmpeg</td>
+                    <td><code>LoadAudio.py</code></td>
+                    <td><code>transcribe_audio(src, out)</code><br><code>transcribe()</code></td>
+                    <td>CHUNK_LENGTH_MS: 55000<br>Channels: 1 (mono)<br>Sample rate: 16kHz<br>Sample width: 2 bytes</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-mot">Motor IA</span></td>
+                    <td>google-cloud-speech 2.30.0<br>openai 1.86.0</td>
+                    <td>APIs externas</td>
+                    <td><code>client.recognize()</code><br><code>chat.completions.create()</code></td>
+                    <td>Encoding: LINEAR16<br>Language: es-ES<br>Model: gpt-4o<br>Temperature: 0.3</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-pos">Postprocesado</span></td>
+                    <td>Python (integrado en app.py)</td>
+                    <td><code>app.py</code><br><code>LoadAudio.py</code></td>
+                    <td>SYSTEM_PROMPT<br>Concatenacion de chunks<br><code>jsonify()</code></td>
+                    <td>max_tokens: 1000<br>Punctuation: auto</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-alm">Almacen</span></td>
+                    <td>Filesystem local</td>
+                    <td><code>call.txt</code><br><code>uploads/</code></td>
+                    <td><code>load_transcription()</code><br><code>file.save()</code> / <code>os.remove()</code></td>
+                    <td>Encoding: UTF-8<br>Archivo temporal: se elimina</td>
+                </tr>
+                <tr>
+                    <td><span class="badge b-bas">Base Conocimiento</span></td>
+                    <td>python-dotenv 1.1.1</td>
+                    <td><code>.env</code><br><code>credentials/*.json</code></td>
+                    <td><code>load_dotenv()</code><br><code>os.getenv()</code></td>
+                    <td>OPENAI_API_KEY<br>GOOGLE_APPLICATION_CREDENTIALS</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
+</body>
+</html>
