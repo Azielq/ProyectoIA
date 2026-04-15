@@ -207,7 +207,7 @@ function updateProgress(current, total, stage) {
         pctEl.classList.remove("visible");
     } else if (stage === "transcribing") {
         const pct = Math.round((current / total) * 100);
-        labelEl.textContent = STAGE_LABELS.transcribing + "  " + current + " / " + total;
+        labelEl.textContent = STAGE_LABELS.transcribing;
         trackEl.classList.remove("idle");
         fillEl.style.width = pct + "%";
         fillEl.classList.add("active");
